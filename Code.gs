@@ -35,7 +35,7 @@ const EX_COLS = EX_HEADERS.length;
 
 const PROGRAM_HEADERS = [
   'Block ID', 'Week Number', 'Day Label', 'Exercise Name',
-  'Target Sets', 'Target Reps', 'Target RPE', 'Exercise Order'
+  'Target Sets', 'Target Reps', 'Target RPE', 'Exercise Order', 'Superset Group'
 ];
 const PROGRAM_COLS = PROGRAM_HEADERS.length;
 
@@ -177,15 +177,16 @@ function setupProgramSheet_(ss) {
     sheet.autoResizeColumns(1, PROGRAM_COLS);
     return;
   }
-  if (sheet.getLastColumn() < PROGRAM_COLS) {
+  const currentCols = sheet.getLastColumn();
+  if (currentCols === 6) {
     sheet.insertColumnsBefore(1, 2);
-    sheet.getRange(1, 1, 1, PROGRAM_COLS).setValues([PROGRAM_HEADERS]);
     if (sheet.getLastRow() >= 2) {
       const rows = sheet.getLastRow() - 1;
       sheet.getRange(2, 1, rows, 2).setValues(Array(rows).fill([1, 1]));
       sheet.getRange(2, 6, rows, 1).setNumberFormat('@');
     }
   }
+  sheet.getRange(1, 1, 1, PROGRAM_COLS).setValues([PROGRAM_HEADERS]);
 }
 
 function setupDayScheduleSheet_(ss) {
@@ -211,7 +212,8 @@ function setupSettingsSheet_(ss) {
   if (!sheet) sheet = ss.insertSheet(SHEET_SETTINGS);
   if (sheet.getLastRow() >= 2) {
     const keys = sheet.getRange(1, 1, sheet.getLastRow(), 1).getValues().flat();
-    const needed = [['heightCm', ''], ['gender', 'male'], ['birthYear', ''], ['activityLevel', 'moderate']];
+    const needed = [['heightCm', ''], ['gender', 'male'], ['birthYear', ''],
+      ['activityLevel', 'moderate'], ['supersetsEnabled', 'false'], ['theme', 'blue']];
     for (const [key, def] of needed) {
       if (!keys.includes(key)) {
         const nr = sheet.getLastRow() + 1;
@@ -221,9 +223,10 @@ function setupSettingsSheet_(ss) {
     return;
   }
   sheet.clear();
-  sheet.getRange(1, 1, 6, 2).setValues([
-    ['Key', 'Value'], ['startDate', ''], ['heightCm', ''],
-    ['gender', 'male'], ['birthYear', ''], ['activityLevel', 'moderate'],
+    sheet.getRange(1, 1, 8, 2).setValues([
+      ['Key', 'Value'], ['startDate', ''], ['heightCm', ''],
+      ['gender', 'male'], ['birthYear', ''], ['activityLevel', 'moderate'],
+      ['supersetsEnabled', 'false'], ['theme', 'blue'],
   ]);
   sheet.setFrozenRows(1);
 }
@@ -352,6 +355,7 @@ function getProgramForBlock_(ss, blockId) {
         : String(r[5] || ''),
       targetRPE: r[6] || '',
       order: Number(r[7]) || 0,
+      group: String(r[8] || '').trim(),
     });
   }
   for (const w of Object.keys(program)) {
@@ -551,7 +555,8 @@ function buildProgramRows_(blockId, weeks) {
     const exs = w.exercises || {};
     for (const [dayLabel, list] of Object.entries(exs)) {
       list.forEach((ex, i) => {
-        rows.push([blockId, w.weekNumber, dayLabel, ex.name, ex.sets, ex.reps || '', ex.rpe || '', i + 1]);
+        rows.push([blockId, w.weekNumber, dayLabel, ex.name, ex.sets,
+          ex.reps || '', ex.rpe || '', i + 1, (ex.group || '').toString().trim()]);
       });
     }
   }
@@ -632,6 +637,7 @@ function getInitData() {
     persistentExists,
     currentBlock,
     pastBlocks: past,
+    settings:           getSettings_(ss),
     exercises:          getExercises_(ss),
     allLoggedExercises: getLoggedExerciseNames_(ss),
     loggedDates:        getLoggedDates_(ss),
@@ -748,7 +754,6 @@ function getLastWorkingSets(exerciseName) {
   const lastCol = sheet.getLastColumn();
   const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, lastCol).getValues();
 
-  // Group all sets for this exercise by date
   const byDate = {};
   for (const r of data) {
     if (r[3] !== exerciseName) continue;
@@ -759,20 +764,18 @@ function getLastWorkingSets(exerciseName) {
     byDate[dateStr].push(readLogRow_(r, dateStr, lastCol));
   }
 
-  // Take the 3 most recent dates; for each, return the first set + any note
   const sessions = Object.keys(byDate)
     .sort((a, b) => b.localeCompare(a))
     .slice(0, 3)
     .map(date => {
       const sets = byDate[date].sort((a, b) => a.setNumber - b.setNumber);
-      const first = sets[0];
       const noted = sets.find(s => s.notes);
       return {
         date,
-        firstSet: {
-          setNumber: first.setNumber, weight: first.weight, reps: first.reps,
-          minutes: first.minutes, seconds: first.seconds, distance: first.distance, rpe: first.rpe,
-        },
+        sets: sets.map(s => ({
+          setNumber: s.setNumber, weight: s.weight, reps: s.reps,
+          minutes: s.minutes, seconds: s.seconds, distance: s.distance, rpe: s.rpe,
+        })),
         notes: noted ? noted.notes : '',
       };
     });
@@ -1010,6 +1013,51 @@ function getBodyLogData() {
   return JSON.stringify({ entries, settings });
 }
 
+function getSettings_(ss) {
+  const sheet = ss.getSheetByName(SHEET_SETTINGS);
+  if (!sheet || sheet.getLastRow() < 2) return {};
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
+  const map = {};
+  for (const [k, v] of data) map[String(k).trim()] = v;
+  const tz = Session.getScriptTimeZone();
+  let startDate = '';
+  if (map.startDate instanceof Date) startDate = Utilities.formatDate(map.startDate, tz, 'yyyy-MM-dd');
+  else startDate = String(map.startDate || '').trim();
+  return {
+    startDate,
+    heightCm: Number(map.heightCm) || 0,
+    gender: String(map.gender || 'male').trim().toLowerCase(),
+    birthYear: Number(map.birthYear) || 0,
+    activityLevel: String(map.activityLevel || 'moderate').trim().toLowerCase(),
+    supersetsEnabled: String(map.supersetsEnabled || 'false').trim().toLowerCase() === 'true',
+    theme: String(map.theme || 'blue').trim().toLowerCase(),
+  };
+}
+
+function saveSettings(payload) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  setupSettingsSheet_(ss);
+  const sheet = ss.getSheetByName(SHEET_SETTINGS);
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
+  const updates = {
+    heightCm: payload.heightCm !== undefined ? payload.heightCm : null,
+    gender: payload.gender !== undefined ? payload.gender : null,
+    birthYear: payload.birthYear !== undefined ? payload.birthYear : null,
+    activityLevel: payload.activityLevel !== undefined ? payload.activityLevel : null,
+    supersetsEnabled: payload.supersetsEnabled !== undefined
+      ? (payload.supersetsEnabled ? 'true' : 'false') : null,
+    startDate: payload.startDate !== undefined ? payload.startDate : null,
+    theme: payload.theme !== undefined ? payload.theme : null,
+  };
+  for (let i = 0; i < data.length; i++) {
+    const key = String(data[i][0]).trim();
+    if (updates[key] !== null && updates[key] !== undefined) {
+      sheet.getRange(i + 2, 2).setValue(updates[key]);
+    }
+  }
+  return JSON.stringify({ success: true });
+}
+
 // =============================================================================
 // Progress (with optional date-range filter)
 // =============================================================================
@@ -1048,10 +1096,11 @@ function getProgressData(exerciseName, dateRange) {
     const first = sorted[0];
     const session = { date };
     if (mt === 'weight_reps') {
-      let maxE1RM = 0, totalVolume = 0;
+      let maxE1RM = 0, totalVolume = 0, totalWeight = 0;
       for (const s of sorted) {
         const w = Number(s.weight) || 0, r = Number(s.reps) || 0;
         totalVolume += w * r;
+        totalWeight += w;
         const e1rm = r > 0 ? w * (1 + r / 30) : 0;
         if (e1rm > maxE1RM) maxE1RM = e1rm;
       }
@@ -1059,6 +1108,7 @@ function getProgressData(exerciseName, dateRange) {
       session.e1rm = Math.round(maxE1RM * 10) / 10;
       session.volume = Math.round(totalVolume);
       session.firstSetWeight = Number(first.weight) || 0;
+      session.avgWeight = Math.round((totalWeight / sorted.length) * 10) / 10;
     } else if (mt === 'weight_time') {
       const totalSec = sorted.reduce((sum, s) =>
         sum + (Number(s.minutes) || 0) * 60 + (Number(s.seconds) || 0), 0);
