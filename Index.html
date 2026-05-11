@@ -5,12 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Workout Log</title>
   <script src="https://www.gstatic.com/charts/loader.js"></script>
+  
   <style>
-    :root {
+    :root,
+    html[data-theme="blue"] {
       --bg:#0f1117; --surface:#1a1d27; --surface2:#242836; --border:#2e3344;
-      --text:#e4e6ed; --text-dim:#8b8fa3; --accent:#6c8cff; --accent-d:#5570d4;
+      --text:#e4e6ed; --text-dim:#8b8fa3;
+      --accent:#6c8cff; --accent-d:#5570d4; --accent-rgb:108,140,255;
       --green:#4ade80; --red:#f87171; --orange:#fbbf24; --purple:#9475d4;
+      --on-accent:#ffffff;
       --radius:10px;
+    }
+    html[data-theme="purple"] {
+      --bg:#120a1c; --surface:#1d1330; --surface2:#291c40; --border:#3d2952;
+      --text:#e8dff5; --text-dim:#a094b3;
+      --accent:#a855f7; --accent-d:#9333ea; --accent-rgb:168,85,247;
+      --green:#4ade80; --red:#f87171; --orange:#fbbf24; --purple:#c084fc;
+      --on-accent:#ffffff;
+    }
+    html[data-theme="light"] {
+      --bg:#f5f5f7; --surface:#ffffff; --surface2:#f0f0f3; --border:#dcdce2;
+      --text:#1a1a1f; --text-dim:#6b6b75;
+      --accent:#3b5fe2; --accent-d:#2d4cb8; --accent-rgb:59,95,226;
+      --green:#16a34a; --red:#dc2626; --orange:#d97706; --purple:#7c3aed;
+      --on-accent:#ffffff;
+    }
+    html[data-theme="oled"] {
+      --bg:#000000; --surface:#0a0a0f; --surface2:#14141a; --border:#1f1f2a;
+      --text:#e4e6ed; --text-dim:#8b8fa3;
+      --accent:#6c8cff; --accent-d:#5570d4; --accent-rgb:108,140,255;
+      --green:#4ade80; --red:#f87171; --orange:#fbbf24; --purple:#9475d4;
+      --on-accent:#ffffff;
     }
     * { box-sizing:border-box; margin:0; padding:0; }
     html,body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
@@ -18,7 +43,8 @@
       min-height:100vh; -webkit-tap-highlight-color:transparent; }
     .app { max-width:540px; margin:0 auto; padding:12px 14px 80px; }
     .header { display:flex; justify-content:space-between; align-items:center;
-      padding:10px 0 14px; border-bottom:1px solid var(--border); margin-bottom:16px; }
+      padding:10px 0 14px; border-bottom:1px solid var(--border); margin-bottom:16px;
+      gap:10px; }
     .header h1 { font-size:1.2rem; font-weight:700; }
     .header-actions { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
     .header-btn { display:inline-flex; align-items:center; gap:4px; min-height:34px;
@@ -33,7 +59,7 @@
     .tab-btn { flex:1; padding:10px 0; text-align:center; border:none; background:none;
       color:var(--text-dim); font-size:0.88rem; font-weight:600; border-radius:8px;
       cursor:pointer; transition:all 0.15s; }
-    .tab-btn.active { background:var(--accent); color:#fff; }
+    .tab-btn.active { background:var(--accent); color:var(--on-accent); }
     .screen { display:none; } .screen.active { display:block; }
 
     .week-select,.progress-filter select,.body-input,.prog-type-select,.prog-label-input,.search-input {
@@ -89,11 +115,11 @@
       padding:12px 24px; border:none; border-radius:8px; font-size:0.95rem; font-weight:600;
       cursor:pointer; transition:background 0.15s,transform 0.1s; width:100%; }
     .btn:active { transform:scale(0.97); }
-    .btn-primary { background:var(--accent); color:#fff; }
+    .btn-primary { background:var(--accent); color:var(--on-accent); }
     .btn-primary:hover { background:var(--accent-d); }
     .btn-secondary { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
-    .btn-modify { background:#2d3a2d; color:var(--green); border:1px solid #3a5a3a; }
-    .btn-modify:hover { background:#354435; }
+    .btn-modify { background:rgba(74,222,128,0.12); color:var(--green); border:1px solid rgba(74,222,128,0.4); }
+    .btn-modify:hover { background:rgba(74,222,128,0.20); }
     .btn-delete { background:transparent; color:var(--red); border:1px solid rgba(248,113,113,0.3);
       font-size:0.85rem; min-height:42px; }
     .btn-delete:hover { border-color:var(--red); background:rgba(248,113,113,0.08); }
@@ -299,7 +325,7 @@
       font-size:0.78rem; font-weight:600; color:var(--text-dim); cursor:pointer;
       transition:all 0.15s; }
     .week-tab:hover { border-color:var(--accent); color:var(--accent); }
-    .week-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .week-tab.active { background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
     .week-tab.empty { opacity:0.5; }
 
     .prog-day-card { background:var(--surface); border-radius:var(--radius);
@@ -315,10 +341,63 @@
       background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b8fa3' stroke-width='2' fill='none'/%3E%3C/svg%3E");
       background-repeat:no-repeat; background-position:right 14px center; }
     .prog-label-input { min-height:40px; font-size:0.88rem; }
-    .prog-ex-row { display:grid; grid-template-columns:36px 1fr 50px 70px 50px 28px;
-      gap:6px; align-items:center; margin-bottom:6px; }
-    .prog-ex-labels { display:grid; grid-template-columns:36px 1fr 50px 70px 50px 28px;
-      gap:6px; margin-bottom:4px; }
+    
+    .prog-ex-labels {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .prog-ex-labels-l1 {
+      display: grid;
+      grid-template-columns: 36px 1fr 28px;
+      gap: 6px;
+      flex: 1 1 50%;
+      min-width: 0;
+    }
+    .prog-ex-labels-l2 {
+      display: grid;
+      grid-template-columns: 40px 50px 70px 50px;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+    .prog-ex-labels-l2.no-group { grid-template-columns: 50px 70px 50px; }
+    .prog-ex-labels span {
+      font-size: 0.65rem; color: var(--text-dim);
+      text-transform: uppercase; text-align: center; letter-spacing: 0.4px;
+    }
+    .prog-ex-labels-l1 {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 6px;
+      flex: 1 1 50%;
+      min-width: 0;
+    }
+
+    .prog-ex-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .prog-ex-line1 {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 6px;
+      align-items: center;
+      flex: 1 1 50%;
+      min-width: 0;
+    }
+    .prog-ex-line2 {
+      display: grid;
+      grid-template-columns: 40px 50px 70px 50px;
+      gap: 6px;
+      align-items: center;
+      flex: 0 0 auto;
+    }
+    .prog-ex-line2.no-group { grid-template-columns: 50px 70px 50px; }
+    .prog-ex-row input.group-input { text-transform: uppercase; }
+
     .prog-ex-reorder { display:flex; flex-direction:column; gap:2px; }
     .prog-reorder-btn { min-height:18px; width:36px; padding:0; border:1px solid var(--border);
       background:var(--surface2); color:var(--text-dim); font-size:0.6rem; cursor:pointer;
@@ -331,12 +410,17 @@
     .prog-ex-name-display { text-align:left; overflow:hidden; text-overflow:ellipsis;
       white-space:nowrap; cursor:pointer; display:flex; align-items:center; }
     .prog-ex-name-display:hover { border-color:var(--accent); }
-    .prog-ex-labels span { font-size:0.65rem; color:var(--text-dim);
-      text-transform:uppercase; text-align:center; letter-spacing:0.4px; }
-    .prog-ex-labels span:first-child { text-align:left; }
     .prog-remove-btn { min-height:40px; width:32px; padding:0; border:none;
       background:none; color:var(--red); font-size:0.9rem; cursor:pointer;
       border-radius:6px; opacity:0.6; transition:opacity 0.15s; }
+    .prog-remove-btn:hover { opacity:1; }
+    .prog-exercises-section { display:none; } .prog-exercises-section.visible { display:block; }
+    .prog-copy-btn { display:flex; align-items:center; justify-content:center;
+      width:100%; padding:8px; background:transparent; border:1px dashed var(--border);
+      border-radius:8px; color:var(--text-dim); font-size:0.78rem; cursor:pointer;
+      margin-top:8px; transition:all 0.15s; }
+    .prog-copy-btn:hover { border-color:var(--accent); color:var(--accent); }
+
     .prog-remove-btn:hover { opacity:1; }
     .prog-exercises-section { display:none; } .prog-exercises-section.visible { display:block; }
     .prog-copy-btn { display:flex; align-items:center; justify-content:center;
@@ -350,6 +434,90 @@
       color:var(--text); font-size:0.9rem; outline:none; resize:vertical;
       font-family:inherit; line-height:1.5; }
     .note-textarea:focus { border-color:var(--accent); }
+
+    .superset-group { border-left:3px solid var(--purple); padding-left:10px; margin-bottom:14px;
+    background:rgba(148,117,212,0.04); border-radius:0 8px 8px 0; padding-top:6px;
+    padding-right:6px; padding-bottom:2px; }
+    .superset-header { font-size:0.72rem; font-weight:700; color:var(--purple);
+      text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; }
+
+  
+    /* Theme picker (Settings) */
+    .theme-picker {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 8px;
+    }
+    .theme-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 10px;
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .theme-option:hover { border-color: var(--accent); }
+    .theme-option.selected {
+      border-color: var(--accent);
+      background: rgba(var(--accent-rgb), 0.1);
+    }
+    .theme-swatch {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    /* Mobile: header stacks (title above, buttons wrap below) */
+    @media (max-width: 600px) {
+      .header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding-bottom: 16px;
+      }
+      .header h1 { text-align: center; font-size: 1.1rem; }
+      .header-actions { justify-content: center; width: 100%; }
+    }
+
+    /* Mobile: program editor exercise rows stack into two visual lines */
+    @media (max-width: 600px) {
+    .prog-ex-labels { display: none; }
+    .prog-ex-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-areas:
+        "l1 x"
+        "l2 l2";
+      gap: 6px;
+      padding: 8px;
+      background: var(--surface2);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+    .prog-ex-line1 { grid-area: l1; }
+    .prog-ex-line2 {
+      grid-area: l2;
+      grid-template-columns: 36px 1fr 1fr 1fr;
+    }
+    .prog-ex-line2.no-group {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+    .prog-ex-line2 > input {
+      min-width: 0;
+      width: 100%;
+    }
+    .prog-remove-btn { grid-area: x; }
+  }
+
   </style>
 </head>
 <body>
@@ -360,9 +528,12 @@
       <div class="header">
         <h1>Workout Log</h1>
         <div class="header-actions">
+          <button class="header-btn" onclick="openViewProgram()">👁 View</button>
           <button class="header-btn" onclick="openProgramEditor()">Edit Program</button>
           <button class="header-btn" id="editBlockBtn" onclick="openBlockEditor('modify')" style="display:none;">Edit Block</button>
           <button class="header-btn primary" onclick="openBlockEditor('new')">+ New Block</button>
+          <button class="header-btn" onclick="openSettingsScreen()" title="Settings">⚙</button>
+          <button class="header-btn" onclick="openInfoScreen()" title="Help">?</button>
         </div>
       </div>
       <div class="tabs" id="mainTabs">
@@ -475,6 +646,36 @@
       <div id="progEditorContent"></div>
       <div style="height:80px;"></div>
     </div>
+
+    <div id="programViewView" style="display:none;">
+      <div class="prog-editor-topbar">
+        <h2>Current Program</h2>
+        <button class="back-btn" onclick="closeViewProgram()">← Back</button>
+      </div>
+      <div id="progViewContent"></div>
+    </div>
+
+    <div id="settingsView" style="display:none;">
+      <div class="prog-editor-topbar">
+        <h2>Settings</h2>
+        <button class="back-btn" onclick="closeSettingsScreen()">← Back</button>
+      </div>
+      <div id="settingsContent"></div>
+      <div style="height:80px;"></div>
+    </div>
+
+    <div id="infoView" style="display:none;">
+      <div class="prog-editor-topbar">
+        <h2>How to use</h2>
+        <button class="back-btn" onclick="closeInfoScreen()">← Back</button>
+      </div>
+      <div id="infoContent"></div>
+    </div>
+
+    <div class="save-bar" id="settingsSaveBar" style="display:none;">
+      <button class="btn btn-primary" onclick="saveSettingsFromScreen()">Save Settings</button>
+    </div>
+
   </div>
 
   <div class="save-bar" id="saveBar"><button class="btn btn-primary" onclick="saveSession()">Save Session</button></div>
@@ -557,6 +758,12 @@
     const MT_LABELS = { weight_reps: 'Weight+Reps', weight_time: 'Weight+Time', time_only: 'Time Only', cardio: 'Cardio' };
     const CARDIO_MODALITY_LABELS = { steady_slow: 'Steady (Slow)', steady_fast: 'Steady (Fast)', hiit: 'HIIT', intervals: 'Intervals', other: 'Other' };
     const MAX_FUTURE_WEEKS = 1; // weeks shown ahead in dropdown
+    const THEME_OPTIONS = [
+      { id: 'blue',   label: 'Blue',       swatch: '#6c8cff' },
+      { id: 'purple', label: 'Purple',     swatch: '#a855f7' },
+      { id: 'light',  label: 'Light',      swatch: '#ffffff' },
+      { id: 'oled',   label: 'OLED Black', swatch: '#000000' },
+    ];
 
     // =========================================================================
     // State
@@ -565,15 +772,16 @@
       exercises: [], loggedDates: {}, allLoggedExercises: [],
       todayStr: '',
       persistentStartDate: '',
-      persistentProgram: { schedule: [], program: {} }, // { schedule: [{day,type,label}], program: { '1': { dayLabel: [...] } } }
+      persistentProgram: { schedule: [], program: {} },
       persistentExists: false,
       currentBlock: null, pastBlocks: [],
-      currentWeek: 1, currentDayOfWeek: 1,  // computed from persistent start
+      currentWeek: 1, currentDayOfWeek: 1,
       maxWeek: 1,
       selectedWeek: 1, selectedDay: 1,
       sessionActive: false, isModifying: false,
       sessionExercises: [], sessionNotes: {}, lastSession: {},
       sessionContext: null,
+      settings: { supersetsEnabled: false, heightCm: 0, gender: 'male', birthYear: 0, activityLevel: 'moderate', startDate: '', theme: 'blue' },
     };
 
     let draftInterval = null;
@@ -582,6 +790,19 @@
     let programPickerDayIdx = null;
     let lastSetsPanelOpen = false;
     let noteModalExIdx = null;
+    let _themeBeforeSettings = null;
+
+    function applyTheme(theme) {
+      const t = (theme || 'blue').trim().toLowerCase();
+      const valid = THEME_OPTIONS.some(o => o.id === t) ? t : 'blue';
+      document.documentElement.dataset.theme = valid;
+    }
+
+    function selectTheme(theme) {
+      document.querySelectorAll('.theme-option').forEach(b =>
+        b.classList.toggle('selected', b.dataset.theme === theme));
+      applyTheme(theme);
+    }
 
     // =========================================================================
     // Init
@@ -610,9 +831,18 @@
       STATE.persistentExists = data.persistentExists;
       STATE.currentBlock = data.currentBlock || null;
       STATE.pastBlocks = data.pastBlocks || [];
+      STATE.settings = data.settings || STATE.settings;
+      applyTheme(STATE.settings.theme);
 
       document.getElementById('loadingState').style.display = 'none';
-      document.getElementById('mainContent').style.display = 'block';
+      const _overlayIds = ['settingsView','programEditorView','programViewView','infoView'];
+      const _overlayOpen = _overlayIds.some(id => {
+        const el = document.getElementById(id);
+        return el && el.style.display === 'block';
+      });
+      if (!_overlayOpen) {
+        document.getElementById('mainContent').style.display = 'block';
+      }
       updateHeaderButtons();
 
       // First-time user with no persistent program → open program editor
@@ -974,27 +1204,26 @@
         const ex = STATE.exercises.find(e => e.name === exerciseName);
         const mt = ex ? ex.measurementType : 'weight_reps';
         const cfg = MT_CONFIG[mt];
-        // cfg.labels = ['#', ...field labels..., ''] — strip the leading '#' and trailing ''
-        const dataLabels = cfg.labels.slice(1, -1);
-        const gridCols = mt === 'weight_time'
-          ? '92px 1fr 1fr 1fr 50px'
-          : '92px 1fr 1fr 60px';
+        const gridCols = mt === 'weight_time' ? '28px 1fr 1fr 1fr 60px' : '40px 1fr 1fr 70px';
         let html = '<div>';
         html += '<div class="lsr-title">' + esc(exerciseName) + '</div>';
-        html += '<div class="lsr-date">Last ' + data.sessions.length + ' session(s) — first set of each</div>';
-        html += '<div class="lsr-row lsr-header" style="grid-template-columns:' + gridCols + ';">';
-        html += '<span>Date</span>';
-        dataLabels.forEach(l => html += '<span>' + l + '</span>');
-        html += '</div>';
-        data.sessions.forEach(s => {
-          html += '<div class="lsr-row" style="grid-template-columns:' + gridCols + ';">';
-          html += '<span>' + fmtDate(s.date) + '</span>';
-          cfg.fields.forEach(f => {
-            const v = s.firstSet[f];
-            html += '<span>' + (v !== '' && v !== undefined && v !== null ? v : '—') + '</span>';
-          });
+        html += '<div class="lsr-date">Last ' + data.sessions.length + ' session(s)</div>';
+        data.sessions.forEach((session, idx) => {
+          if (idx > 0) html += '<div style="height:14px;"></div>';
+          html += '<div class="lsr-date" style="font-weight:600;color:var(--text);">' + fmtDate(session.date) + '</div>';
+          if (session.notes) html += '<div class="lsr-note">📝 ' + esc(session.notes) + '</div>';
+          html += '<div class="lsr-row lsr-header" style="grid-template-columns:' + gridCols + ';">';
+          for (let i = 0; i < cfg.labels.length - 1; i++) html += '<span>' + cfg.labels[i] + '</span>';
           html += '</div>';
-          if (s.notes) html += '<div class="lsr-note">📝 ' + esc(s.notes) + '</div>';
+          session.sets.forEach(s => {
+            html += '<div class="lsr-row" style="grid-template-columns:' + gridCols + ';">';
+            html += '<span>' + s.setNumber + '</span>';
+            cfg.fields.forEach(f => {
+              const v = s[f];
+              html += '<span>' + (v !== '' && v !== undefined && v !== null ? v : '—') + '</span>';
+            });
+            html += '</div>';
+          });
         });
         html += '</div>';
         resultDiv.innerHTML = html;
@@ -1062,6 +1291,7 @@
           measurementType: exInfo.measurementType || 'weight_reps',
           cardioModality: exInfo.cardioModality || '',
           targetReps: p.targetReps, targetRPE: p.targetRPE,
+          group: p.group || '',
           prevSets, sets,
         });
         handled.add(p.exerciseName);
@@ -1076,6 +1306,7 @@
           measurementType: exInfo.measurementType || 'weight_reps',
           cardioModality: exInfo.cardioModality || '',
           targetReps: '', targetRPE: '',
+          group: '',
           prevSets: STATE.lastSession[exName] || [],
           sets: logged.map(cloneSet),
         });
@@ -1148,7 +1379,36 @@
     function renderSessionForm() {
       const c = document.getElementById('exerciseCards');
       c.innerHTML = '';
-      STATE.sessionExercises.forEach((ex, i) => c.appendChild(buildExerciseCard(ex, i)));
+      const supersetsEnabled = STATE.settings && STATE.settings.supersetsEnabled;
+      let i = 0;
+      while (i < STATE.sessionExercises.length) {
+        const ex = STATE.sessionExercises[i];
+        const grp = supersetsEnabled ? String(ex.group || '').trim().toUpperCase() : '';
+        if (!grp || ex._deleted) {
+          c.appendChild(buildExerciseCard(ex, i));
+          i++;
+          continue;
+        }
+        const start = i;
+        while (i < STATE.sessionExercises.length &&
+          String(STATE.sessionExercises[i].group || '').trim().toUpperCase() === grp &&
+          !STATE.sessionExercises[i]._deleted) {
+          i++;
+        }
+        const count = i - start;
+        if (count < 2) {
+          c.appendChild(buildExerciseCard(STATE.sessionExercises[start], start));
+        } else {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'superset-group';
+          const label = count === 2 ? 'Superset' : 'Giantset';
+          wrapper.innerHTML = '<div class="superset-header">' + label + ' ' + esc(grp) + ' · ' + count + ' exercises</div>';
+          for (let k = start; k < i; k++) {
+            wrapper.appendChild(buildExerciseCard(STATE.sessionExercises[k], k));
+          }
+          c.appendChild(wrapper);
+        }
+      }
     }
 
     function buildExerciseCard(ex, exIdx) {
@@ -1390,6 +1650,7 @@
           measurementType: exInfo.measurementType || 'weight_reps',
           cardioModality: exInfo.cardioModality || '',
           targetReps: '', targetRPE: '',
+          group: '',
           prevSets,
           sets: [emptySet(), emptySet(), emptySet()],
         });
@@ -1530,7 +1791,7 @@
 
     function deleteSession() {
       const dateStr = getSelectedDateStr();
-      if (!confirm('Delete the log for this day?')) return;
+      if (!confirm('Delete the log for this day? Warning: this cannot be undone.')) return;
       const action = document.getElementById('dayAction');
       const orig = action.innerHTML;
       action.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
@@ -1607,7 +1868,7 @@
       for (const [dayLabel, list] of Object.entries(wp)) {
         exMap[dayLabel] = list.map((p, i) => ({
           name: p.exerciseName, sets: p.targetSets, reps: p.targetReps,
-          rpe: p.targetRPE, order: p.order || (i + 1),
+          rpe: p.targetRPE, group: p.group || '', order: p.order || (i + 1),
         }));
       }
       PROG_EDITOR = {
@@ -1620,7 +1881,9 @@
       document.getElementById('progSaveBar').style.display = 'block';
       document.getElementById('saveBar').style.display = 'none';
       document.getElementById('progEditorTitle').textContent = STATE.persistentExists ? 'Edit Program' : 'Set Up Your Program';
-      document.getElementById('progSaveBtn').textContent = 'Save Program';
+      const _saveBtn1 = document.getElementById('progSaveBtn');
+      _saveBtn1.textContent = 'Save Program';
+      _saveBtn1.disabled = false;
       renderProgramEditor();
     }
 
@@ -1650,8 +1913,9 @@
       document.getElementById('saveBar').style.display = 'none';
       document.getElementById('progEditorTitle').textContent =
         PROG_EDITOR.mode === 'new' ? 'New Block' : 'Edit Block ' + PROG_EDITOR.blockId;
-      document.getElementById('progSaveBtn').textContent =
-        PROG_EDITOR.mode === 'new' ? 'Create Block' : 'Update Block';
+      const _saveBtn2 = document.getElementById('progSaveBtn');
+      _saveBtn2.textContent = PROG_EDITOR.mode === 'new' ? 'Create Block' : 'Update Block';
+      _saveBtn2.disabled = false;
       renderProgramEditor();
     }
 
@@ -1691,7 +1955,7 @@
         for (const [dayLabel, list] of Object.entries(wp)) {
           exercises[dayLabel] = list.map((p, i) => ({
             name: p.exerciseName, sets: p.targetSets, reps: p.targetReps,
-            rpe: p.targetRPE, order: p.order || (i + 1),
+            rpe: p.targetRPE, group: p.group || '', order: p.order || (i + 1),
           }));
         }
         result.push({ weekNumber: w, schedule, exercises });
@@ -1771,20 +2035,39 @@
         if (canHaveExercises) {
           const dayExs = week.exercises[d.label] || [];
           if (dayExs.length > 0) {
-            html += '<div class="prog-ex-labels"><span>Order</span><span>Exercise</span><span>Sets</span><span>Reps</span><span>RPE</span><span></span></div>';
+            const groupCol = STATE.settings.supersetsEnabled;
+            const noGroupCls = groupCol ? '' : ' no-group';
+
+            // Labels (desktop only — hidden by CSS on mobile)
+            html += '<div class="prog-ex-labels">';
+            html +=   '<div class="prog-ex-labels-l1"><span></span><span>Exercise</span><span></span></div>';
+            html +=   '<div class="prog-ex-labels-l2' + noGroupCls + '">';
+            if (groupCol) html += '<span>Grp</span>';
+            html +=     '<span>Sets</span><span>Reps</span><span>RPE</span>';
+            html +=   '</div>';
+            html += '</div>';
+
             dayExs.forEach((ex, j) => {
-              const upDisabled = j === 0 ? ' disabled' : '';
+              const upDisabled   = j === 0 ? ' disabled' : '';
               const downDisabled = j === dayExs.length - 1 ? ' disabled' : '';
-              html += '<div class="prog-ex-row">' +
-                '<div class="prog-ex-reorder">' +
-                  '<button class="prog-reorder-btn"' + upDisabled + ' onclick="moveEditorExercise(' + dayIdx + ',' + j + ',-1)">▲</button>' +
-                  '<button class="prog-reorder-btn"' + downDisabled + ' onclick="moveEditorExercise(' + dayIdx + ',' + j + ',1)">▼</button>' +
-                '</div>' +
-                '<div class="prog-ex-name-display" onclick="openEditorExercisePicker(' + dayIdx + ', ' + j + ')">' + esc(ex.name) + '</div>' +
-                '<input type="number" inputmode="numeric" value="' + (ex.sets || '') + '" onchange="onEditorExField(' + dayIdx + ',' + j + ',\'sets\',this.value)">' +
-                '<input type="text" value="' + esc(String(ex.reps || '')) + '" placeholder="8-12" onchange="onEditorExField(' + dayIdx + ',' + j + ',\'reps\',this.value)">' +
-                '<input type="text" value="' + esc(String(ex.rpe || '')) + '" placeholder="RPE" onchange="onEditorExField(' + dayIdx + ',' + j + ',\'rpe\',this.value)">' +
-                '<button class="prog-remove-btn" onclick="removeEditorExercise(' + dayIdx + ',' + j + ')">✕</button></div>';
+              html += '<div class="prog-ex-row">';
+              html +=   '<div class="prog-ex-line1">';
+              html +=     '<div class="prog-ex-reorder">';
+              html +=       '<button class="prog-reorder-btn"' + upDisabled + ' onclick="moveEditorExercise(' + dayIdx + ',' + j + ',-1)">▲</button>';
+              html +=       '<button class="prog-reorder-btn"' + downDisabled + ' onclick="moveEditorExercise(' + dayIdx + ',' + j + ',1)">▼</button>';
+              html +=     '</div>';
+              html +=     '<div class="prog-ex-name-display" onclick="openEditorExercisePicker(' + dayIdx + ', ' + j + ')">' + esc(ex.name) + '</div>';
+              html +=   '</div>';
+              html +=   '<div class="prog-ex-line2' + noGroupCls + '">';
+              if (groupCol) {
+                html +=   '<input type="text" class="group-input" maxlength="2" value="' + esc(String(ex.group || '')) + '" placeholder="Grp" onchange="onEditorExField(' + dayIdx + ',' + j + ',\'group\',this.value)">';
+              }
+              html +=     '<input type="number" inputmode="numeric" value="' + (ex.sets || '') + '" placeholder="Sets" onchange="onEditorExField(' + dayIdx + ',' + j + ',\'sets\',this.value)">';
+              html +=     '<input type="text" value="' + esc(String(ex.reps || '')) + '" placeholder="8-12" onchange="onEditorExField(' + dayIdx + ',' + j + ',\'reps\',this.value)">';
+              html +=     '<input type="text" value="' + esc(String(ex.rpe || '')) + '" placeholder="RPE" onchange="onEditorExField(' + dayIdx + ',' + j + ',\'rpe\',this.value)">';
+              html +=   '</div>';
+              html +=   '<button class="prog-remove-btn" onclick="removeEditorExercise(' + dayIdx + ',' + j + ')">✕</button>';
+              html += '</div>';
             });
           }
           html += '<button class="add-set-btn" style="margin-top:8px;" onclick="openEditorExercisePicker(' + dayIdx + ', -1)">+ Add Exercise</button>';
@@ -1798,7 +2081,6 @@
       });
       c.innerHTML = html;
     }
-
     function weekdayForBlockDay(startDate, weekNumber, dayInWeek) {
       if (!startDate) return '';
       const start = new Date(startDate + 'T00:00:00');
@@ -1881,7 +2163,7 @@
         week.exercises[d.label][exIdx].name = exerciseName;
       } else {
         week.exercises[d.label].push({
-          name: exerciseName, sets: 3, reps: '', rpe: '',
+          name: exerciseName, sets: 3, reps: '', rpe: '', group: '',
           order: week.exercises[d.label].length + 1,
         });
       }
@@ -2045,6 +2327,7 @@
         if (list.length > 0) {
           exMap[d.label] = list.map((ex, idx) => ({
             name: ex.name, sets: ex.sets || 3, reps: ex.reps || '', rpe: ex.rpe || '',
+            group: ex.group || '',
             order: idx + 1,
           }));
         }
@@ -2099,6 +2382,7 @@
           if (list.length > 0) {
             exMap[d.label] = list.map((ex, idx) => ({
               name: ex.name, sets: ex.sets || 3, reps: ex.reps || '', rpe: ex.rpe || '',
+              group: ex.group || '',
               order: idx + 1,
             }));
           }
@@ -2199,9 +2483,11 @@
         '</div>' +
         '<div class="chart-container"><div class="chart-title">Estimated 1RM Trend</div><div id="chart1rm" style="width:100%;height:220px;"></div></div>' +
         '<div class="chart-container"><div class="chart-title">Working Weight Trend (Set 1)</div><div id="chartWW" style="width:100%;height:220px;"></div></div>' +
+        '<div class="chart-container"><div class="chart-title">Average Working Weight</div><div id="chartAvg" style="width:100%;height:220px;"></div></div>' +
         '<div class="chart-container"><div class="chart-title">Session Volume</div><div id="chartVol" style="width:100%;height:220px;"></div></div>';
       drawChart('chart1rm', data.sessions.map(s => [fmtDate(s.date), s.e1rm]), 'Est. 1RM (kg)', '#6c8cff');
       drawChart('chartWW', data.sessions.map(s => [fmtDate(s.date), s.firstSetWeight]), 'Weight (kg)', '#fbbf24');
+      drawChart('chartAvg', data.sessions.map(s => [fmtDate(s.date), s.avgWeight || 0]), 'Avg Weight (kg)', '#9475d4');
       drawChart('chartVol', data.sessions.map(s => [fmtDate(s.date), s.volume]), 'Volume (kg)', '#4ade80', 'column');
     }
     function renderProgressOther(data, c, mt) {
@@ -2246,8 +2532,9 @@
         chartArea: { left: 50, right: 16, top: 10, bottom: 40 },
         hAxis: { textStyle: { color: '#8b8fa3', fontSize: 10 }, slantedText: true, slantedTextAngle: 45 },
         vAxis: { textStyle: { color: '#8b8fa3', fontSize: 10 }, gridlines: { color: '#2e3344' } },
-        lineWidth: 2, pointSize: 5, curveType: 'function',
+        lineWidth: 2, pointSize: 5,
       };
+      if (kind !== 'column') opts.lineDashStyle = [4, 4];
       const chart = kind === 'column'
         ? new google.visualization.ColumnChart(document.getElementById(elId))
         : new google.visualization.LineChart(document.getElementById(elId));
@@ -2445,6 +2732,192 @@
       t.className = 'toast show' + (isError ? ' error' : '');
       setTimeout(() => t.className = 'toast', 2500);
     }
+
+    function openViewProgram() {
+      document.getElementById('mainContent').style.display = 'none';
+      document.getElementById('programViewView').style.display = 'block';
+      document.getElementById('saveBar').style.display = 'none';
+      renderViewProgram();
+    }
+    function closeViewProgram() {
+      document.getElementById('programViewView').style.display = 'none';
+      document.getElementById('mainContent').style.display = 'block';
+    }
+    function renderViewProgram() {
+      const c = document.getElementById('progViewContent');
+      let html = '';
+      if (STATE.currentBlock) {
+        const b = STATE.currentBlock;
+        html += '<div class="block-info-card"><div style="font-weight:700;font-size:1rem;margin-bottom:4px;">Block ' + b.id + ': ' + esc(b.name) + '</div>';
+        html += '<div style="font-size:0.78rem;color:var(--text-dim);">' + b.lengthWeeks + ' week' + (b.lengthWeeks > 1 ? 's' : '') + ' · started ' + fmtDate(b.startDate) + '</div></div>';
+        b.weeks.forEach(week => {
+          html += '<h3 style="font-size:0.85rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px;">Week ' + week.weekNumber + '</h3>';
+          week.schedule.forEach(d => html += renderViewDayCard(d, b.program[String(week.weekNumber)] || {}));
+        });
+      } else if (STATE.persistentExists) {
+        html += '<div class="block-info-card"><div style="font-weight:700;font-size:1rem;">Persistent Program</div>';
+        html += '<div style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Anchored to ' + fmtDate(STATE.persistentStartDate) + '</div></div>';
+        STATE.persistentProgram.schedule.forEach(d =>
+          html += renderViewDayCard(d, STATE.persistentProgram.program['1'] || {}));
+      } else {
+        html += '<div class="no-data">No program defined yet.</div>';
+      }
+      c.innerHTML = html;
+    }
+    function renderViewDayCard(d, exercisesByDay) {
+      let html = '<div class="prog-day-card">';
+      html += '<div class="prog-day-header"><div><div class="prog-day-title">' + esc(d.label) + '</div>';
+      html += '<div class="prog-day-weekday">' + d.type + '</div></div></div>';
+      if (d.type !== 'Rest') {
+        const exs = exercisesByDay[d.label] || [];
+        if (exs.length > 0) {
+          const supersetsOn = STATE.settings && STATE.settings.supersetsEnabled;
+          exs.forEach(ex => {
+            const grp = supersetsOn && ex.group ? ' <span style="color:var(--purple);font-weight:600;">[' + esc(String(ex.group).toUpperCase()) + ']</span>' : '';
+            const rpe = ex.targetRPE ? ' · RPE ' + esc(String(ex.targetRPE)) : '';
+            html += '<div style="padding:6px 0;font-size:0.88rem;border-bottom:1px solid var(--border);">';
+            html += '<div style="font-weight:600;">' + esc(ex.exerciseName) + grp + '</div>';
+            html += '<div style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;">' +
+              (ex.targetSets || '?') + ' × ' + esc(String(ex.targetReps || '?')) + rpe + '</div>';
+            html += '</div>';
+          });
+        } else {
+          html += '<div style="color:var(--text-dim);font-style:italic;font-size:0.85rem;">No exercises</div>';
+        }
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function openSettingsScreen() {
+      _themeBeforeSettings = STATE.settings.theme || 'blue';
+      document.getElementById('mainContent').style.display = 'none';
+      document.getElementById('settingsView').style.display = 'block';
+      document.getElementById('settingsSaveBar').style.display = 'block';
+      document.getElementById('saveBar').style.display = 'none';
+      renderSettingsScreen();
+    }
+    function closeSettingsScreen() {
+      if (_themeBeforeSettings && document.documentElement.dataset.theme !== _themeBeforeSettings) {
+        applyTheme(_themeBeforeSettings);
+      }
+      _themeBeforeSettings = null;
+      document.getElementById('settingsView').style.display = 'none';
+      document.getElementById('settingsSaveBar').style.display = 'none';
+      document.getElementById('mainContent').style.display = 'block';
+    }
+    function renderSettingsScreen() {
+      const s = STATE.settings;
+      const c = document.getElementById('settingsContent');
+      const themePickerHtml = THEME_OPTIONS.map(opt =>
+        '<button class="theme-option' + (s.theme === opt.id ? ' selected' : '') + '" data-theme="' + opt.id + '" onclick="selectTheme(\'' + opt.id + '\')">' +
+        '<span class="theme-swatch" style="background:' + opt.swatch + ';"></span>' +
+        '<span>' + opt.label + '</span></button>').join('');
+      c.innerHTML =
+        '<div class="body-section">' +
+          '<h3 class="section-title">Personal</h3>' +
+          '<div class="form-row"><label>Height (cm)</label><input type="number" inputmode="decimal" id="setHeight" value="' + (s.heightCm || '') + '"></div>' +
+          '<div class="form-row"><label>Sex</label><select id="setGender">' +
+            '<option value="male"' + (s.gender === 'male' ? ' selected' : '') + '>Male</option>' +
+            '<option value="female"' + (s.gender === 'female' ? ' selected' : '') + '>Female</option>' +
+          '</select></div>' +
+          '<div class="form-row"><label>Birth Year</label><input type="number" inputmode="numeric" id="setBirthYear" value="' + (s.birthYear || '') + '"></div>' +
+          '<div class="form-row"><label>Activity Level</label><select id="setActivity">' +
+            ['sedentary','light','moderate','active','very_active'].map(k =>
+              '<option value="' + k + '"' + (s.activityLevel === k ? ' selected' : '') + '>' + k.replace('_', ' ') + '</option>').join('') +
+          '</select></div>' +
+        '</div>' +
+        '<div class="body-section">' +
+          '<h3 class="section-title">Theme</h3>' +
+          '<div class="theme-picker">' + themePickerHtml + '</div>' +
+          '<div style="font-size:0.78rem;color:var(--text-dim);margin-top:10px;line-height:1.5;">Tap a theme to preview. Choose Save Settings to persist, or go Back to discard the preview.</div>' +
+        '</div>' +
+        '<div class="body-section">' +
+          '<h3 class="section-title">Program Anchor</h3>' +
+          '<div class="form-row"><label>Persistent Start Date (DD/MM/YYYY)</label>' +
+            '<input type="text" id="setStartDate" maxlength="10" value="' + esc(fmtDate(s.startDate || '')) + '" oninput="autoFormatDate(this)"></div>' +
+        '</div>' +
+        '<div class="body-section">' +
+          '<h3 class="section-title">Features</h3>' +
+          '<div class="form-row" style="flex-direction:row;align-items:center;gap:10px;">' +
+            '<input type="checkbox" id="setSupersets"' + (s.supersetsEnabled ? ' checked' : '') + ' style="width:20px;height:20px;">' +
+            '<label for="setSupersets" style="margin:0;text-transform:none;font-size:0.88rem;color:var(--text);letter-spacing:normal;">Enable supersets / giantsets</label>' +
+          '</div>' +
+          '<div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;line-height:1.5;">When enabled, you can assign a group letter (A, B, C…) to exercises in the program editor. Exercises in the same group render together in the session view.</div>' +
+        '</div>';
+    }
+    function saveSettingsFromScreen() {
+      const startDateRaw = document.getElementById('setStartDate').value;
+      let startDate = STATE.settings.startDate;
+      if (startDateRaw) {
+        const parsed = parseDDMMYYYY(startDateRaw);
+        if (!parsed) { showToast('Invalid start date', true); return; }
+        startDate = parsed;
+      }
+      const themeEl = document.querySelector('.theme-option.selected');
+      const theme = themeEl ? themeEl.dataset.theme : (STATE.settings.theme || 'blue');
+      const payload = {
+        heightCm: parseFloat(document.getElementById('setHeight').value) || 0,
+        gender: document.getElementById('setGender').value,
+        birthYear: parseInt(document.getElementById('setBirthYear').value) || 0,
+        activityLevel: document.getElementById('setActivity').value,
+        supersetsEnabled: document.getElementById('setSupersets').checked,
+        startDate,
+        theme,
+      };
+      const btn = document.querySelector('#settingsSaveBar .btn');
+      btn.textContent = 'Saving…'; btn.disabled = true;
+      google.script.run.withSuccessHandler(raw => {
+        const r = JSON.parse(raw);
+        if (r.success) {
+          STATE.settings = { ...STATE.settings, ...payload };
+          _themeBeforeSettings = null;
+          showToast('Settings saved ✓');
+          btn.textContent = 'Save Settings';
+          btn.disabled = false;
+          closeSettingsScreen();
+          reloadInitData();
+        } else {
+          showToast(r.message || 'Save failed', true);
+          btn.textContent = 'Save Settings'; btn.disabled = false;
+        }
+      }).withFailureHandler(e => {
+        showToast('Error: ' + e.message, true);
+        btn.textContent = 'Save Settings'; btn.disabled = false;
+      }).saveSettings(payload);
+    }
+
+    function openInfoScreen() {
+      document.getElementById('mainContent').style.display = 'none';
+      document.getElementById('infoView').style.display = 'block';
+      document.getElementById('saveBar').style.display = 'none';
+      renderInfoScreen();
+    }
+    function closeInfoScreen() {
+      document.getElementById('infoView').style.display = 'none';
+      document.getElementById('mainContent').style.display = 'block';
+    }
+    function renderInfoScreen() {
+      document.getElementById('infoContent').innerHTML =
+        '<div class="body-section"><h3 class="section-title">Logging a workout</h3>' +
+        '<p style="font-size:0.88rem;line-height:1.6;color:var(--text);">On the Log tab, pick the week and day, then tap <b>Start Workout</b>. Each exercise from your program appears as a card. Fill in weight, reps, and optionally RPE per set, then tap <b>Save Session</b>. The arrow ⤵ next to a set copies the previous set\'s values. <b>📝 Note</b> lets you add a per-day comment to that exercise. The session auto-saves a draft every 15 seconds, so a dead phone never costs you data.</p></div>' +
+
+        '<div class="body-section"><h3 class="section-title">Editing your program</h3>' +
+        '<p style="font-size:0.88rem;line-height:1.6;color:var(--text);">Tap <b>Edit Program</b> to modify your persistent weekly template — your default routine that repeats indefinitely. Each day can be set to Workout, Active Rest, or Rest, and any non-rest day can carry exercises with target sets, reps, and RPE. Use the ▲▼ buttons to reorder exercises within a day, and the 📋 buttons to copy structure from another day in the same week.</p></div>' +
+
+        '<div class="body-section"><h3 class="section-title">Blocks (periodized cycles)</h3>' +
+        '<p style="font-size:0.88rem;line-height:1.6;color:var(--text);">A block is a temporary periodized program that overlays your persistent routine for a fixed window. Tap <b>+ New Block</b>, give it a name and length (1–16 weeks), and optionally seed it from your persistent program or any past block. While the block is active, its schedule takes priority over your persistent program. Tap <b>Edit Block</b> to modify the active block; the ⚠ End This Block Today button stops it early.</p></div>' +
+
+        '<div class="body-section"><h3 class="section-title">Creating new exercises</h3>' +
+        '<p style="font-size:0.88rem;line-height:1.6;color:var(--text);">From inside the program editor, tap <b>+ Add Exercise</b>, then <b>+ Create new exercise</b> at the top of the picker. Fill in name, muscle group, equipment, and a measurement type — <i>Weight & Reps</i> for standard lifts, <i>Weight & Time</i> for weighted carries, <i>Time Only</i> for static holds, or <i>Cardio</i> for distance/duration work. The new exercise becomes available immediately and is selected for you.</p></div>' +
+
+        '<div class="body-section"><h3 class="section-title">Tracking progress</h3>' +
+        '<p style="font-size:0.88rem;line-height:1.6;color:var(--text);">The Progress tab shows trends per exercise — estimated 1RM, working weight, average weight, and volume for weighted lifts; duration trends for static holds; distance and pace for cardio. Use the range filter to scope progress to a specific block. The Body tab tracks bodyweight and ten optional measurements, calculates body fat % via the US Navy method, and estimates TDEE plus macros for your goal.</p></div>' +
+
+        '<div class="body-section"><h3 class="section-title">Supersets</h3>' +
+        '<p style="font-size:0.88rem;line-height:1.6;color:var(--text);">Enable the supersets feature in <b>⚙ Settings</b>. A new "Grp" column appears in the program editor — assign a letter (A, B, C…) to exercises that should be done together. Adjacent exercises with the same letter render as a grouped block in the session view, with a purple border and a "Superset A" or "Giantset A" header.</p></div>';
+    }
+
   </script>
 </body>
 </html>
